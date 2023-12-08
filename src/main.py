@@ -1,0 +1,145 @@
+import os
+import pickle
+import numpy as np
+from decimal import *
+import torch
+import src.decompression.decompress as decompress
+import src.compression.deltaCompress as compress
+
+def compress_delta(weight_delta, decomposed_delta):
+    """
+    @param delta: The delta obtained between normal layers.
+    @param decomposed_delta: The delta obtained between decomposed layers.
+
+    @return Quantized deltas as well as new deltas to replace the initial base.
+    """
+    compressed_weight_delta, _ = compress.compress_data(weight_delta)
+    compressed_decomposed_delta, _ = compress.compress_data(decomposed_delta)
+    return compressed_weight_delta, compressed_decomposed_delta
+
+def extract_weights(initmodel, saveloc, decomposed_layers, restoring = False):
+    """
+    @param initmodel : Initial run of the model.
+    @param saveloc : The save location for the current model training process.
+    @param restoring : If it is currently being used for model restoration, 
+        which does not require another full-save
+    @param decomposed_layers : Name of the newly decomposed layers
+    @return The base for all delta calculations.
+    """
+    wd = initmodel.state_dict()
+
+    if restoring:
+        # Save current model state_dict for restoration of weights.
+        if not os.path.exists(saveloc):
+            os.makedirs(saveloc)
+        fp = os.path.join(saveloc, "base_model.pt")
+        torch.save(wd, fp)
+
+    # Generate base layer of weights (0-th state) for delta to build on.
+    decomposed_layers = compress.generate_decomposed_names(decomposed_layers)
+    weights, decomposed_weights = [], []
+    for k, v in wd.items():
+        if "bias" in k:
+            continue
+        if k in decomposed_layers:
+            decomposed_weights.append(v)
+            continue
+        elif "classifier" in k:
+            continue
+        else:
+            weights.append(v)
+    weights = np.concatenate([tensor.flatten().numpy() for tensor in weights])
+    decomposed_weights = np.concatenate([tensor.flatten().numpy() for tensor in decomposed_weights])
+    return weights, decomposed_weights
+
+def generate_delta(weights_prev : np.array, decomposed_weights_prev : np.array, sd_curr, decomposed_layers):
+    """
+    @param weights_prev : The previous weights of non-decomposed layers.
+    @param decomposed_weights_prev : The previous weights of decomposed layers.
+    @param sd_curr : The state dictionary of the current weights.
+    @param decomposed_layers : layers that have undergone decomposition.
+
+    @return The delta for the weights of the normal and decomposed layers.
+    Also returns the full dictionary, which holds the bias.
+    """
+    weights_curr, decomposed_weights_curr = [], []
+    decomposed_layers = compress.generate_decomposed_names(decomposed_layers)
+    full = {} # Store layers that require full save (bias layers)
+    for k in sd_curr:
+        if "bias" in k:
+            full[k] = sd_curr[k]
+            continue
+        if k in decomposed_layers:
+            decomposed_weights_curr.append(sd_curr[k])
+            continue
+        elif "classifier" in k:
+            full[k] = sd_curr[k]
+            continue
+        else: # Extract weights for prev and current layer.
+            weights_curr.append(sd_curr[k])
+        
+    # Generate weight delta.
+    curr_flatten = np.concatenate([tensor.numpy().flatten() for tensor in weights_curr])
+    decomposed_curr_flatten = np.concatenate([tensor.numpy().flatten() for tensor in decomposed_weights_curr])
+    weight_delta = np.subtract(curr_flatten, weights_prev)
+    decomposed_weight_delta = np.subtract(decomposed_curr_flatten, decomposed_weights_prev)
+    
+    return weight_delta, curr_flatten, decomposed_weight_delta, decomposed_curr_flatten, full
+
+def save_checkpoint(checkpoint_weights, decomposed_weights, checkpoint_bias, checkpoint_id, saveloc):
+    """
+    @param checkpoint_weights : The delta of the weights data of the checkpoint (post GZIP Compression).
+    @param decomposed_weights : The delta of the decomposed weights of the model (post GZIP Compression).
+    @param checkpoint_bias : The bias of the checkpoint to be saved.
+    @param checkpoint_id : The ID of the checkpoint to be saved.
+    @param saveloc : The filepath for the training process to be saved in.
+    """
+    if not os.path.exists(saveloc):
+        os.makedirs(saveloc)
+    checkpoint_name = "lc_checkpoint_{}.pt".format(checkpoint_id)
+    print("Saving Checkpoint {} @ {}".format(checkpoint_name, saveloc))
+    fp = os.path.join(saveloc, checkpoint_name)
+    with open(fp, "wb") as f:
+        pickle.dump((checkpoint_weights, decomposed_weights, checkpoint_bias), f)
+    
+def load_checkpoint(full_path):
+    """
+    @param full_path : The full_path of the checkpoint to be reloaded from.
+    """
+    with open(full_path, "r") as f:
+        checkpoint_weights, decomposed_weights, checkpoint_bias = pickle.load(f)
+    decompressed_weights = decompress.decode_data(checkpoint_weights)
+    decompressed_dcomp = decompress.decode_data(decomposed_weights)
+    return decompressed_weights, decompressed_dcomp, checkpoint_bias
+
+def restore_checkpoint(model, saveloc, id, rank = 3):
+    """
+    @param model : The model to load the checkpoint weights into.
+    @param saveloc : The filepath for the training process to be restored from.
+    @param id : The ID with respect to the current file for 
+            the training process to be restored from, ID given is treated as inclusive.
+            Note that valid IDs starts from 1 onwards (0-th ID is the full save).
+    @param rank : The rank specified within the decomposition process.
+
+    @return model with restored weights included.
+    """
+    fp = os.path.join(saveloc, "base_model.pt")
+    og_sd = torch.load(fp)
+    org_weight, org_decomposed_weights = extract_weights(og_sd, saveloc, restoring = True)
+    base = org_weight.copy()
+    base_decomposed = org_decomposed_weights.copy()
+
+    # Adding delta back to base.
+    for i in range(1, id + 1):
+        fp = os.path.join(saveloc, "lc_checkpoint_{}.pt".format(i))
+        decompressed_weights, decompressed_dcomp_weights, _ = load_checkpoint(fp)
+        base = np.add(base, decompressed_weights)
+        base_decomposed = np.add(base_decomposed, decompressed_dcomp_weights)
+    
+    # Get full bias of final model.
+    fp = os.path.join(saveloc, "lc_checkpoint_{}.pt".format(id))
+    _, _, full_bias = load_checkpoint(fp)
+
+    new_sd = decompress.restore_state_dict(base, base_decomposed, full_bias, model.state_dict(), rank, og_sd)
+    model.load_state_dict(new_sd)
+    return model
