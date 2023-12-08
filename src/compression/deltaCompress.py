@@ -1,7 +1,6 @@
 import numpy as np
 from collections import defaultdict
 import zlib, math
-import torch
 
 def generate_decomposed_names(original_layers):
     """

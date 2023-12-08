@@ -1,18 +1,34 @@
-import numpy as np
-import torch
+import torch, math
 import torch.nn as nn
-import torch.nn.functional as F
 
 class LowRankLinear(nn.Module):
-    def __init__(self, in_shape: int, out_shape: int, rank : int, base, bias : torch.Tensor):
+    def __init__(self, in_shape: int, out_shape: int, rank : int, 
+                 base, bias : torch.Tensor, alpha : int = 1):
         super().__init__()
-        alpha_t = torch.zeros(out_shape, rank, requires_grad = True)
-        beta_t = torch.zeros(rank, in_shape, requires_grad = True)
+        """
+        @param in_shape, out_shape : Layer dimensions as per nn.Linear
+        @param rank : Rank of the decomposition.
+        @param base : Initial base weight of the layer (W), kept frozen during training.
+        @param bias : Initial bias of the layer, trainable.
+        @param alpha : Scaling factor of the LoRA decomposition.
+
+        Representation of linear layer with weight (W_new), where:
+
+        W_new = W + A @ B
+
+        Such that A and B are trainable low-rank matrices initialised as uniform and zero initially.
+        """
+        alpha_t = torch.empty((out_shape, rank), dtype = torch.float32, requires_grad = True)
+        beta_t = torch.empty((rank, in_shape), dtype = torch.float32, requires_grad = True)
         self.alpha = nn.Parameter(alpha_t, requires_grad = True)
         self.beta = nn.Parameter(beta_t, requires_grad = True)
-        self.bias = nn.Parameter(bias, requires_grad = True)
-        self.base = base
+        self.bias = nn.Parameter(bias.clone(), requires_grad = True)
+        torch.nn.init.kaiming_uniform_(self.alpha, a =  math.sqrt(5))
+        torch.nn.init.zeros_(self.beta)
+        self.base = base.clone()
+        self.base.requires_grad = False
+        self.scaling = alpha / rank
 
     def forward(self, x):
-        full_weight = torch.add(self.base, torch.matmul(self.alpha, self.beta))
-        return F.linear(x, full_weight, self.bias)
+        h = x @ self.base.T + self.scaling * (x @ (self.alpha @ self.beta).T)
+        return h + self.bias

@@ -28,7 +28,7 @@ def load_sd_decomp(org_sd, model, decomposed_layers):
     model.load_state_dict(new_sd)
 
 class AlexNet_LowRank(nn.Module):   
-    def __init__(self, base : list, bias : list, num=10, rank = 3):
+    def __init__(self, base : list, bias : list, num=10, rank = 100):
         """
         @param base : List of initial bases for the linear layers, kept as a parameter.
         @param rank : The rank of the original model to be kept.
