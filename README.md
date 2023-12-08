@@ -2,7 +2,8 @@
 
 ### Introduction
 
-Compression mechanism for model branches using Low-Rank Approximation and delta-encoding.
+Sequential compression framework for model training using Low-Rank Approximation and delta-encoding.
+Aimed to support diverging branches in model training process too.
 
 ### Credits
 
