@@ -5,6 +5,7 @@ from decimal import *
 import torch
 import src.decompression.decompress as decompress
 import src.compression.deltaCompress as compress
+from src.utils.utils import lazy_restore
 
 def compress_delta(weight_delta, decomposed_delta):
     """
@@ -51,6 +52,47 @@ def extract_weights(initmodel, saveloc, decomposed_layers, restoring = False):
     weights = np.concatenate([tensor.flatten().numpy() for tensor in weights])
     decomposed_weights = np.concatenate([tensor.flatten().numpy() for tensor in decomposed_weights])
     return weights, decomposed_weights
+
+def full_snapshot(current_base, decomp_base, bias, 
+                  clean_model, rank, org, clean_model_lora_f, saveloc, 
+                  decomposed_layers, decomposed_bias):
+    """
+    @param base_weights : The current non-decomposition weights base used in the delta calculations.
+    @param decomp_base : The current decomposed weights used in the delta calculations.
+    @param bias : The current bias used in the delta calculations.
+    @param clean_model : A clean version of the non-loRA model to merge the loRA layers into.
+    @param rank : The rank used in the loRA decomposition.
+    @param original : The origin model (base model in the set the LoRA to be saved came from).
+    @param clean_model_lora_f : A function to build the clean version of the 
+        loRA model to load the current weights into with a fresh set of low-rank weights.
+        Can be written as a anon functions, eg. lambda x : model(x)
+    @param saveloc : The save location to store the full snapshot in.
+    @param decomposed_layers : The layers which contain decomposed weights.
+    @param decomposed_bias : The bias layers affected by the decomposition of the weights.
+
+    @return Saves a full snapshot of the current loRA model as a full model whilst 
+        rebuilding a new LoRA model for training.
+    """
+    clean_model = lazy_restore(current_base, decomp_base, bias, clean_model, rank, org, decomposed_layers)
+    if not os.path.exists(saveloc):
+            os.makedirs(saveloc)
+    fp = os.path.join(saveloc, "base_model.pt")
+    torch.save(clean_model.state_dict(), fp)
+    weights, bias = [], []
+    for k, v in clean_model.state_dict().items():
+        if k in decomposed_layers:
+            weights.append(v)
+            continue
+        if k in decomposed_bias:
+            bias.append(v)
+    clean_model_lora = clean_model_lora_f(weights, bias, rank = rank)
+    wd = clean_model_lora.items()
+    for k, v in clean_model.state_dict().items():
+        if k in decomposed_bias or k in decomposed_layers:
+            continue
+        wd[k] = v
+    clean_model_lora.load_state_dict(wd)
+    return clean_model_lora
 
 def generate_delta(weights_prev : np.array, decomposed_weights_prev : np.array, sd_curr, decomposed_layers):
     """

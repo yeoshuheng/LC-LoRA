@@ -65,3 +65,13 @@ def lazy_restore(weights, weights_decomp, bias, clean_model, rank, org, decompos
     clean_model.load_state_dict(base_dict)
     return clean_model
 
+def evaluate_compression(uncompressed_size, compressed_size):
+    """
+    @param uncompressed_size : Size of the uncompressed model.
+    @param compressed_size : Size of compressed model.
+
+    @return compression_ratio & space savings ratio.
+    """
+    compression_ratio = round((uncompressed_size / compressed_size), 5) * 100
+    space_savings = round(1 - (compressed_size / uncompressed_size), 5) * 100
+    return compression_ratio, space_savings

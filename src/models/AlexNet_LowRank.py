@@ -28,9 +28,10 @@ def load_sd_decomp(org_sd, model, decomposed_layers):
     model.load_state_dict(new_sd)
 
 class AlexNet_LowRank(nn.Module):   
-    def __init__(self, base : list, bias : list, num=10, rank = 100):
+    def __init__(self, weights : list, bias : list, num=10, rank = 100):
         """
-        @param base : List of initial bases for the linear layers, kept as a parameter.
+        @param weights : List of initial bases for the loRA linear layers, kept as a parameter.
+        @param bias : List of initial biases for the loRA linear layers, kept as a parameter.
         @param rank : The rank of the original model to be kept.
         """
         super(AlexNet_LowRank, self).__init__()
@@ -50,10 +51,10 @@ class AlexNet_LowRank(nn.Module):
         )
         self.classifier = nn.Sequential(
             nn.Dropout(),
-            LowRankLinear(32*12*12, 2048, rank, base[0], bias[0]),
+            LowRankLinear(32*12*12, 2048, rank, weights[0], bias[0]),
             nn.ReLU(inplace=True),
             nn.Dropout(),
-            LowRankLinear(2048, 1024, rank, base[1], bias[1]),
+            LowRankLinear(2048, 1024, rank, weights[1], bias[1]),
             nn.ReLU(inplace=True),
             nn.Linear(1024,num),
         )
