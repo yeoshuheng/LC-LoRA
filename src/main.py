@@ -29,11 +29,12 @@ def extract_weights(initmodel, saveloc, decomposed_layers, restoring = False):
     """
     wd = initmodel.state_dict()
 
-    if restoring:
+    if not restoring:
         # Save current model state_dict for restoration of weights.
         if not os.path.exists(saveloc):
             os.makedirs(saveloc)
         fp = os.path.join(saveloc, "base_model.pt")
+        print("saving full base model @ {}".format(fp))
         torch.save(wd, fp)
 
     # Generate base layer of weights (0-th state) for delta to build on.
