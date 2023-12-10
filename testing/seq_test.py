@@ -1,14 +1,17 @@
 import os
 import torch
 from torchvision import datasets
+import numpy as np
 from torchvision import transforms
-import ssl
+import ssl, json
 import src.main as lc
 from src.models.AlexNet import AlexNet
 from src.models.AlexNet_LowRank import getBase, AlexNet_LowRank, load_sd_decomp
 from src.utils.utils import evaluate_accuracy, lazy_restore
+import matplotlib.pyplot as plt
 
 HDFP = "/volumes/Ultra Touch" # Load HHD
+BRANCH_POINT = "model-0.522.pt" # Load branch point.
 
 def data_loader():
     transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.5,), (1.0,))])
@@ -29,6 +32,9 @@ def data_loader():
     return trainloader, testloader
 
 def main():
+    """
+    This script tests the 
+    """
     # Bypass using SSL unverified
     ssl._create_default_https_context = ssl._create_unverified_context
     # MNIST dataset 
@@ -48,7 +54,7 @@ def main():
     model_original = AlexNet()
 
     # Load from "branch point"
-    BRANCH_LOC = HDFP + "/sim-test/alexnet/full/model-0.522.pt"
+    BRANCH_LOC = HDFP + "/sim-test/alexnet/full/{}".format(BRANCH_POINT)
     original.load_state_dict(torch.load(BRANCH_LOC))
     model_original.load_state_dict(torch.load(BRANCH_LOC))
 
@@ -83,7 +89,10 @@ def main():
                 base, base_decomp = lc.extract_weights(model, SAVE_LOC + 
                                                         "/set_{}".format(current_set), DECOMPOSED_LAYERS)
                 print("testing on first load:")
-                evaluate_accuracy(model, test_loader)
+                init_acc = evaluate_accuracy(model, test_loader)
+                full_accuracy.append(init_acc)
+                decomposed_full_accuracy.append(init_acc)
+                restored_accuracy.append(init_acc)
             else:
                 if i % 10 == 0: 
                     # full snapshot!
@@ -99,8 +108,7 @@ def main():
                     if not os.path.exists(SAVE_LOC + set_path):
                         os.makedirs(SAVE_LOC + set_path)
                         os.makedirs(SAVE_LOC_FULL + set_path)
-                    torch.save(original.state_dict(), SAVE_LOC + "/set_{}/branching_pt_model.pt".format(current_set))
-                    
+                        
                     # Build post-snapshot full LoRA, reset model + optimiser
                     w, b = getBase(original)
                     model = AlexNet_LowRank(w, b, rank = 100)
@@ -176,3 +184,19 @@ def main():
         json.dump({"full_model" : full_accuracy, 
                     "decomposed_model" : decomposed_full_accuracy, 
                     "decomposed_restored" : restored_accuracy}, f)
+    plot_path = "/lobranch-snapshot"
+
+    plt.figure(figsize = (20, 5))
+    plt.title("AlexNet Accuracy, Decomposed Models against Full Model")
+    plt.plot(full_accuracy, label = "Full Model") 
+    plt.plot(decomposed_full_accuracy, label = "Decomposed Model")
+    plt.plot(restored_accuracy, label = "Restored Decomposed Model")
+    plt.legend()
+    plt.savefig(plot_path + "acc_comparison_results.png")
+
+    plt.figure(figsize = (20, 5))
+    plt.title("AlexNet Absolute Accuracy Loss")
+    plt.plot(np.abs(np.subtract(np.array(decomposed_full_accuracy), 
+                        np.array(restored_accuracy))))
+    plt.legend()
+    plt.savefig(plot_path + "acc_loss_results.png")
