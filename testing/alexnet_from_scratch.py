@@ -1,27 +1,18 @@
-import glob
-import sys
 import os
-import time
-import numpy as np
-import pandas as pd
 import torch
-import torch.nn as nn
-import scipy as spy
 from torchvision import datasets
 from torchvision import transforms
-import matplotlib.pyplot as plt
-from torch.utils.data.sampler import SubsetRandomSampler
 import ssl
-import pickle, json
+import json
 import src.main as lc
 from src.models.AlexNet import AlexNet
-import src.compression.deltaCompress as lc_compress
 from src.models.AlexNet_LowRank import getBase, AlexNet_LowRank, load_sd_decomp
 from src.utils.utils import evaluate_accuracy, lazy_restore, evaluate_compression
 
-
-HDFP = "/volumes/Ultra Touch" # Load HHD
-RANK = 64 # Rank of decomposition
+# Save path
+HDFP = "/volumes/Ultra Touch"
+# Rank of decomposition to test
+RANK = 64 # 3 1
 
 def data_loader():
     transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.5,), (1.0,))])
@@ -60,7 +51,7 @@ def main():
     original = AlexNet()
     model_original = AlexNet()
 
-    # Load from "branch point"
+    # Load from "branch point" => not needed in "from scratch" training.
     #BRANCH_LOC = HDFP + "/sim-test/alexnet/full/model-0.709.pt"
     #original.load_state_dict(torch.load(BRANCH_LOC))
     #model_original.load_state_dict(torch.load(BRANCH_LOC))
@@ -174,7 +165,7 @@ def main():
                     full_accuracy[-1], decomposed_full_accuracy[-1], restored_accuracy[-1]))
             
 
-    write_path = HDFP + "/lobranch-snapshot/from-scratch-full_acc_results_1000.json"
+    write_path = HDFP + "/lobranch-snapshot/from-scratch-acc-results_{}.json".format(RANK)
     with open(write_path, 'w') as f:
         json.dump({"full_model" : full_accuracy, 
                     "decomposed_model" : decomposed_full_accuracy, 
