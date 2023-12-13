@@ -6,7 +6,8 @@ def getBase(model):
     """
     @param model : The original AlexNet.
     
-    @return The weights and bias needed to act as the base for the low-rank version of the custom linear layers.
+    @return The weights and bias needed to act as 
+        the base for the low-rank version of the custom linear layers.
     """
     wd = model.state_dict()
     w = [wd['classifier.1.weight'], wd['classifier.4.weight']]
@@ -51,10 +52,10 @@ class AlexNet_LowRank(nn.Module):
         )
         self.classifier = nn.Sequential(
             nn.Dropout(),
-            LowRankLinear(32*12*12, 2048, rank, weights[0], bias[0]),
+            LowRankLinear(32*12*12, 2048, weights[0], bias[0], rank = rank),
             nn.ReLU(inplace=True),
             nn.Dropout(),
-            LowRankLinear(2048, 1024, rank, weights[1], bias[1]),
+            LowRankLinear(2048, 1024, weights[1], bias[1], rank = rank),
             nn.ReLU(inplace=True),
             nn.Linear(1024,num),
         )
