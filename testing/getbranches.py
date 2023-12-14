@@ -47,20 +47,13 @@ def main():
     for epch in range(4):
         for i, data in enumerate(train_loader, 0):
             print("Epoch: {}, Iteration: {}".format(epch, i))
-            
-            # Get the inputs and labels
             inputs, labels = data
-
-            # Zero the parameter gradients
             optimizer.zero_grad()
-
-            # Forward + backward + optimize
             outputs = model(inputs)
             loss = torch.nn.functional.cross_entropy(outputs,labels)
             loss.backward()
             optimizer.step()
-
-            if i != 0 and i % 500 == 0:
+            if i != 0 and i % 100 == 0: # Check if it could possibly be a branch point.
                 acc_ = evaluate_accuracy(model, test_loader)
                 if acc_ > 0.5:
                     print("Saving possible branch point at: {}".format(acc_))
