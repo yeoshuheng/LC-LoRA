@@ -11,14 +11,14 @@ def decode_data(checkpoint):
     """
     return np.frombuffer(zlib.decompress(checkpoint), dtype = np.float32)
 
-def restoreLinearLayer(alpha, beta, base):
+def restoreLinearLayer(alpha, beta, s1, s2, base):
     """
     @param alpha : Left component of the decomposition.
     @param beta : Right component of the decomposition.
 
     @return The converted weights of the original model according to the decomposition.
     """
-    return torch.add(base, torch.matmul(alpha, beta))
+    return torch.add(torch.add(base, torch.matmul(alpha, beta)), torch.matmul(s1, s2))
 
 def restore_state_dict(decoded_checkpoint, decoded_decomp_checkpoint, bias, base_dict, rank, org, decomposed_layers):
     """

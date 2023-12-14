@@ -51,10 +51,16 @@ def lazy_restore(weights, weights_decomp, bias, clean_model, rank, org, decompos
             last_idx_dcomp += t_element_alpha
             beta = weights_decomp[last_idx_dcomp : last_idx_dcomp + t_element_beta]
             last_idx_dcomp += t_element_beta
+            sparse1 = weights_decomp[last_idx_dcomp : last_idx_dcomp + t_element_alpha]
+            last_idx_dcomp += t_element_alpha
+            sparse2 = weights_decomp[last_idx_dcomp : last_idx_dcomp + t_element_beta]
+            last_idx_dcomp += t_element_beta
             alpha = torch.unflatten(torch.from_numpy(np.copy(alpha)), -1, (dim[0], rank))
             beta = torch.unflatten(torch.from_numpy(np.copy(beta)), -1, (rank, dim[1]))
-            restored_decomp = restoreLinearLayer(alpha, beta, org[layer_name])
-            base_dict[layer_name] = restored_decomp
+            sparse1 = torch.unflatten(torch.from_numpy(np.copy(sparse1)), -1, (dim[0], rank))
+            sparse2 = torch.unflatten(torch.from_numpy(np.copy(sparse2)), -1, (rank, dim[1]))
+            restored_decomp = restoreLinearLayer(alpha, beta, sparse1, sparse2, org[layer_name])
+            base_dict[layer_name] = restored_decomp            
         elif "classifier" in layer_name:
             base_dict[layer_name] = bias[layer_name]
         else: # Restoration procedure for convolutional layers.

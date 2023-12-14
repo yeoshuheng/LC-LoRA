@@ -8,7 +8,7 @@ class LowRankLinear(nn.Module):
         """
         @param in_shape, out_shape : Layer dimensions as per nn.Linear
         @param rank : Rank of the decomposition. 
-            (if rank is -1, we use 'min(in_shape, out_shape)//2' as our rank instead.)
+            (if rank is -1, we use 'min(in_shape, out_shape)//4' as our rank instead.)
         @param base : Initial base weight of the layer (W), kept frozen during training.
         @param bias : Initial bias of the layer, trainable.
         @param alpha : Scaling factor of the LoRA decomposition.
@@ -20,18 +20,27 @@ class LowRankLinear(nn.Module):
         Such that A and B are trainable low-rank matrices initialised as uniform and zero initially.
         """
         if rank == -1:
-            rank = min(in_shape, out_shape) // 2
+            rank = min(in_shape, out_shape) // 4
         alpha_t = torch.empty((out_shape, rank), dtype = torch.float32, requires_grad = True)
         beta_t = torch.empty((rank, in_shape), dtype = torch.float32, requires_grad = True)
         self.alpha = nn.Parameter(alpha_t, requires_grad = True)
         self.beta = nn.Parameter(beta_t, requires_grad = True)
         self.bias = nn.Parameter(bias.clone(), requires_grad = True)
+
+        self.sparse1 = nn.Parameter(torch.empty((out_shape, rank), 
+                                                dtype = torch.float32, 
+                                                requires_grad = True), requires_grad = True)
+        self.sparse2 = nn.Parameter(torch.empty((rank, in_shape), 
+                                                dtype = torch.float32, 
+                                                requires_grad = True), requires_grad = True)
         torch.nn.init.kaiming_uniform_(self.alpha, a =  math.sqrt(5))
         torch.nn.init.zeros_(self.beta)
+        torch.nn.init.kaiming_uniform_(self.sparse1, a =  math.sqrt(5))
+        torch.nn.init.zeros_(self.sparse2)
         self.base = base.clone()
         self.base.requires_grad = False
         self.scaling = alpha / rank
 
     def forward(self, x):
-        h = x @ self.base.T + self.scaling * (x @ (self.alpha @ self.beta).T)
+        h = (x @ self.base.T + self.scaling * (x @ (self.alpha @ self.beta).T)) + (x @ (self.sparse1 @ self.sparse2).T)
         return h + self.bias

@@ -12,11 +12,11 @@ def compress_delta(weight_delta, decomposed_delta):
     @param delta: The delta obtained between normal layers.
     @param decomposed_delta: The delta obtained between decomposed layers.
 
-    @return Quantized deltas as well as new deltas to replace the initial base.
+    @return Quantized deltas as well as new deltas to update the initial base.
     """
-    compressed_weight_delta, _ = compress.compress_data(weight_delta, num_bits = 5)
-    compressed_decomposed_delta, _ = compress.compress_data(decomposed_delta, num_bits = 5)
-    return compressed_weight_delta, compressed_decomposed_delta
+    compressed_weight_delta, delta_weight = compress.compress_data(weight_delta, num_bits = 5)
+    compressed_decomposed_delta, delta_decomposed_weight = compress.compress_data(decomposed_delta, num_bits = 5)
+    return compressed_weight_delta, delta_weight, compressed_decomposed_delta, delta_decomposed_weight
 
 def extract_weights(initmodel, saveloc, decomposed_layers, restoring = False):
     """
@@ -127,7 +127,7 @@ def generate_delta(weights_prev : np.array, decomposed_weights_prev : np.array, 
     weight_delta = np.subtract(curr_flatten, weights_prev)
     decomposed_weight_delta = np.subtract(decomposed_curr_flatten, decomposed_weights_prev)
     
-    return weight_delta, curr_flatten, decomposed_weight_delta, decomposed_curr_flatten, full
+    return weight_delta, decomposed_weight_delta, full
 
 def save_checkpoint(checkpoint_weights, decomposed_weights, checkpoint_bias, checkpoint_id, saveloc):
     """

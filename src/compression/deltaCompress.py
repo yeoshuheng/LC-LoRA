@@ -14,6 +14,8 @@ def generate_decomposed_names(original_layers):
         newname = ".".join(dcl.split(".")[:-1])
         decomposed_layers.append(newname + ".alpha")
         decomposed_layers.append(newname + ".beta")
+        decomposed_layers.append(newname + ".sparse1")
+        decomposed_layers.append(newname + ".sparse2")
     return decomposed_layers
 
 def compress_data(δt, num_bits = 3, threshhold=True):
