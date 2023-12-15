@@ -41,8 +41,13 @@ def restore_state_dict(decoded_checkpoint, decoded_decomp_checkpoint, bias, base
         if not dim:
             continue
         if layer_name in decomposed_layers: # Restoration procedure for dense layers.
-            t_element_alpha = dim[1] * rank
-            t_element_beta = dim[0] * rank
+            if rank == -1:
+                rr = min(dim[0], dim[1]) // 2
+                t_element_alpha = dim[1] * rr
+                t_element_beta = dim[2] * rr
+            else: 
+                t_element_alpha = dim[1] * rank
+                t_element_beta = dim[0] * rank
             alpha = decoded_decomp_checkpoint[last_idx_dcomp : last_idx_dcomp + t_element_alpha]
             last_idx_dcomp += t_element_alpha
             beta = decoded_decomp_checkpoint[last_idx_dcomp : last_idx_dcomp + t_element_beta]
