@@ -20,7 +20,7 @@ class LowRankLinear(nn.Module):
         Such that A and B are trainable low-rank matrices initialised as uniform and zero initially.
         """
         if rank == -1:
-            rank = min(in_shape, out_shape) // 2
+            rank = min(in_shape, out_shape) // 4
         alpha_t = torch.empty((out_shape, rank), dtype = torch.float32, requires_grad = True)
         beta_t = torch.empty((rank, in_shape), dtype = torch.float32, requires_grad = True)
         self.alpha = nn.Parameter(alpha_t, requires_grad = True)

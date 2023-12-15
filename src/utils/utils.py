@@ -46,20 +46,17 @@ def lazy_restore(weights, weights_decomp, bias, clean_model, rank, org, decompos
             continue
         if layer_name in decomposed_layers: # Restoration procedure for dense layers.
             if rank == -1:
-                rr = min(dim[0], dim[1]) // 2
-                t_element_alpha = dim[1] * rr
-                t_element_beta = dim[2] * rr
-            else: 
-                t_element_alpha = dim[1] * rank
-                t_element_beta = dim[0] * rank
-            t_element_alpha = dim[0] * rank
-            t_element_beta = dim[1] * rank
+                rr = min(dim[0], dim[1]) // 4
+            else:
+                rr = rank
+            t_element_alpha = dim[0] * rr
+            t_element_beta = dim[1] * rr
             alpha = weights_decomp[last_idx_dcomp : last_idx_dcomp + t_element_alpha]
             last_idx_dcomp += t_element_alpha
             beta = weights_decomp[last_idx_dcomp : last_idx_dcomp + t_element_beta]
             last_idx_dcomp += t_element_beta
-            alpha = torch.unflatten(torch.from_numpy(np.copy(alpha)), -1, (dim[0], rank))
-            beta = torch.unflatten(torch.from_numpy(np.copy(beta)), -1, (rank, dim[1]))
+            alpha = torch.unflatten(torch.from_numpy(np.copy(alpha)), -1, (dim[0], rr))
+            beta = torch.unflatten(torch.from_numpy(np.copy(beta)), -1, (rr, dim[1]))
             restored_decomp = restoreLinearLayer(alpha, beta, org[layer_name])
             base_dict[layer_name] = restored_decomp
         elif "classifier" in layer_name:

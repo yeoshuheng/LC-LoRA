@@ -155,7 +155,7 @@ def load_checkpoint(full_path):
     decompressed_dcomp = decompress.decode_data(decomposed_weights)
     return decompressed_weights, decompressed_dcomp, checkpoint_bias
 
-def restore_checkpoint(model, saveloc, id, rank = 3):
+def restore_checkpoint(model, saveloc, id, rank):
     """
     @param model : The model to load the checkpoint weights into.
     @param saveloc : The filepath for the training process to be restored from.

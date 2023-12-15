@@ -42,18 +42,17 @@ def restore_state_dict(decoded_checkpoint, decoded_decomp_checkpoint, bias, base
             continue
         if layer_name in decomposed_layers: # Restoration procedure for dense layers.
             if rank == -1:
-                rr = min(dim[0], dim[1]) // 2
-                t_element_alpha = dim[1] * rr
-                t_element_beta = dim[2] * rr
-            else: 
-                t_element_alpha = dim[1] * rank
-                t_element_beta = dim[0] * rank
+                rr = min(dim[0], dim[1]) // 4
+            else:
+                rr = rank
+            t_element_alpha = dim[0] * rr
+            t_element_beta = dim[1] * rr
             alpha = decoded_decomp_checkpoint[last_idx_dcomp : last_idx_dcomp + t_element_alpha]
             last_idx_dcomp += t_element_alpha
             beta = decoded_decomp_checkpoint[last_idx_dcomp : last_idx_dcomp + t_element_beta]
             last_idx_dcomp += t_element_beta
-            alpha = torch.from_numpy(alpha).reshape(dim[0], rank)
-            beta = torch.from_numpy(beta).reshape(rank, dim[1])
+            alpha = torch.from_numpy(alpha).reshape(dim[0], rr)
+            beta = torch.from_numpy(beta).reshape(rr, dim[1])
             restored_decomp = restoreLinearLayer(alpha, beta, org[layer_name])
             base_dict[layer_name] = restored_decomp
         elif "classifier" in layer_name:
