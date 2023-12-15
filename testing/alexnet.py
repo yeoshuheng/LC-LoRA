@@ -4,6 +4,7 @@ from torchvision import datasets
 from torchvision import transforms
 import ssl
 import json
+import numpy as np
 import src.main as lc
 from src.models.AlexNet import AlexNet
 from src.models.AlexNet_LowRank import getBase, AlexNet_LowRank, load_sd_decomp
@@ -109,16 +110,18 @@ def main():
 
                 else:
                     # Delta-compression
-                    delta, new_base, decomp_delta, new_base_decomp, bias = lc.generate_delta(base, 
+                     # Delta-compression
+                    delta, decomp_delta, bias = lc.generate_delta(base, 
                                                                     base_decomp, model.state_dict(), DECOMPOSED_LAYERS)
-                    compressed_delta, compressed_dcomp_delta = lc.compress_delta(delta, decomp_delta)
+                    compressed_delta, full_delta, compressed_dcomp_delta, full_dcomp_delta  = lc.compress_delta(delta, decomp_delta)
+
                     
                     # Saving checkpoint
                     lc.save_checkpoint(compressed_delta, compressed_dcomp_delta, bias, current_iter, SAVE_LOC + 
                                     "/set_{}".format(current_set))
         
-                    base = new_base # Replace base with latest for delta to accumulate.
-                    base_decomp = new_base_decomp
+                    base = np.add(base, full_delta) # Replace base with latest for delta to accumulate.
+                    base_decomp = np.add(full_dcomp_delta, base_decomp)
 
                     current_iter += 1
             
