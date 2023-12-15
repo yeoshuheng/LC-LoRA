@@ -14,8 +14,8 @@ def compress_delta(weight_delta, decomposed_delta):
 
     @return Quantized deltas as well as new deltas to update the initial base.
     """
-    compressed_weight_delta, delta_weight = compress.compress_data(weight_delta, num_bits = 5)
-    compressed_decomposed_delta, delta_decomposed_weight = compress.compress_data(decomposed_delta, num_bits = 5)
+    compressed_weight_delta, delta_weight = compress.compress_data(weight_delta, num_bits = 3)
+    compressed_decomposed_delta, delta_decomposed_weight = compress.compress_data(decomposed_delta, num_bits = 3)
     return compressed_weight_delta, delta_weight, compressed_decomposed_delta, delta_decomposed_weight
 
 def extract_weights(initmodel, saveloc, decomposed_layers, restoring = False):

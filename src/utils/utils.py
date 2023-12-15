@@ -45,8 +45,13 @@ def lazy_restore(weights, weights_decomp, bias, clean_model, rank, org, decompos
         if not dim:
             continue
         if layer_name in decomposed_layers: # Restoration procedure for dense layers.
-            t_element_alpha = dim[0] * rank
-            t_element_beta = dim[1] * rank
+            if rank == -1:
+                rr = min(dim[0], dim[1]) // 4
+                t_element_alpha = dim[0] * rr
+                t_element_beta = dim[1] * rr
+            else:
+                t_element_alpha = dim[0] * rank
+                t_element_beta = dim[1] * rank
             alpha = weights_decomp[last_idx_dcomp : last_idx_dcomp + t_element_alpha]
             last_idx_dcomp += t_element_alpha
             beta = weights_decomp[last_idx_dcomp : last_idx_dcomp + t_element_beta]
