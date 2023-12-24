@@ -1,6 +1,7 @@
 import torch
 import numpy as np
 from src.decompression.decompress import restoreLinearLayer
+from src.compression.LowRankLinear import generate_rank
 
 def evaluate_accuracy(model, test_ds):
     """
@@ -21,19 +22,18 @@ def evaluate_accuracy(model, test_ds):
     model.train() # Revert to training state.
     return acc
 
-def lazy_restore(weights, weights_decomp, bias, clean_model, rank, org, decomposed_layers):
+def lazy_restore(weights, weights_decomp, bias, clean_model, org, decomposed_layers, rank : int = -1, scaling : int = -1):
     """
-    NOT ACTUAL CHECKPOINT, MAINLY USED FOR QUICK TESTING OF THE SYSTEM.
-
     @param weights : Decompressed weights of normal model layers.
     @param weights_decomp : Decompressed weights of the decomposed layers.
     @param bias : full bias save.
     @param clean_model : A clean seperate model to test the model on.
     @param rank : The rank of the decomposition used.
+    @param scaling : The scaling factor of the model.
     @param org : The original model.
     @param decomposed_layers : list of layers that have undergone decomposition. 
     
-    @return lazily restored model (mid-training restore) for evaluating checkpoint accuracy.
+    @return lazily restored model (restoration with weights vector settled) for evaluating checkpoint accuracy.
     """
     base_dict = clean_model.state_dict()
     last_idx, last_idx_dcomp = 0, 0
@@ -46,7 +46,7 @@ def lazy_restore(weights, weights_decomp, bias, clean_model, rank, org, decompos
             continue
         if layer_name in decomposed_layers: # Restoration procedure for dense layers.
             if rank == -1:
-                rr = min(dim[0], dim[1]) // 4
+                rr = generate_rank(dim[0], dim[1])
             else:
                 rr = rank
             t_element_alpha = dim[0] * rr
@@ -57,7 +57,7 @@ def lazy_restore(weights, weights_decomp, bias, clean_model, rank, org, decompos
             last_idx_dcomp += t_element_beta
             alpha = torch.unflatten(torch.from_numpy(np.copy(alpha)), -1, (dim[0], rr))
             beta = torch.unflatten(torch.from_numpy(np.copy(beta)), -1, (rr, dim[1]))
-            restored_decomp = restoreLinearLayer(alpha, beta, org[layer_name])
+            restored_decomp = restoreLinearLayer(alpha, beta, org[layer_name], scaling)
             base_dict[layer_name] = restored_decomp
         elif "classifier" in layer_name:
             base_dict[layer_name] = bias[layer_name]

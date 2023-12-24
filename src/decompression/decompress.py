@@ -1,7 +1,7 @@
 import numpy as np
 import pathos.multiprocessing as pmp
 import torch, zlib
-import src.compression.LowRankLinear as LowRankLinear
+from src.compression.LowRankLinear import generate_rank
 
 def decode_data(checkpoint):
     """
@@ -11,22 +11,26 @@ def decode_data(checkpoint):
     """
     return np.frombuffer(zlib.decompress(checkpoint), dtype = np.float32)
 
-def restoreLinearLayer(alpha, beta, base):
+def restoreLinearLayer(alpha, beta, base, scaling):
     """
     @param alpha : Left component of the decomposition.
     @param beta : Right component of the decomposition.
+    @param scaling : The scaling factor of the model.
 
     @return The converted weights of the original model according to the decomposition.
     """
-    return torch.add(base, torch.matmul(alpha, beta))
+    if scaling == -1:
+        scaling = 0.5
+    return torch.add(base, scaling * torch.matmul(alpha, beta))
 
-def restore_state_dict(decoded_checkpoint, decoded_decomp_checkpoint, bias, base_dict, rank, org, decomposed_layers):
+def restore_state_dict(decoded_checkpoint, decoded_decomp_checkpoint, bias, base_dict, org, decomposed_layers, rank = -1, scaling = -1):
     """
     @param decoded_checkpoint: The decoded checkpoint of normal weights from zlib.
     @param decoded_decomp_checkpoint: The decoded checkpoint of decomposed weights from zlib.
     @param bias : The bias dictionary of the model.
     @param base_dict : The base dictionary of the model which helps us understand its structure.
     @param rank : The rank of the decomposition used for the linear layers.
+    @param scaling : The scaling factor of the linear layers (default put -1)
     @param org : The original model state dictionary, when the branch was first taken.
     @param decomposed_layers : list of layers that have undergone decomposition. 
 
@@ -42,7 +46,7 @@ def restore_state_dict(decoded_checkpoint, decoded_decomp_checkpoint, bias, base
             continue
         if layer_name in decomposed_layers: # Restoration procedure for dense layers.
             if rank == -1:
-                rr = min(dim[0], dim[1]) // 4
+                rr = rr = generate_rank(dim[0], dim[1])
             else:
                 rr = rank
             t_element_alpha = dim[0] * rr

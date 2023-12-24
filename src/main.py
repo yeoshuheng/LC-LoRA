@@ -14,8 +14,8 @@ def compress_delta(weight_delta, decomposed_delta):
 
     @return Quantized deltas as well as new deltas to replace the initial base.
     """
-    compressed_weight_delta, full_delta = compress.compress_data(weight_delta, num_bits = 5)
-    compressed_decomposed_delta, decomp_full_delta = compress.compress_data(decomposed_delta, num_bits = 5)
+    compressed_weight_delta, full_delta = compress.compress_data(weight_delta, num_bits = 3)
+    compressed_decomposed_delta, decomp_full_delta = compress.compress_data(decomposed_delta, num_bits = 3)
     return compressed_weight_delta, full_delta, compressed_decomposed_delta, decomp_full_delta
 
 def extract_weights(initmodel, saveloc, decomposed_layers, restoring = False):
@@ -24,7 +24,7 @@ def extract_weights(initmodel, saveloc, decomposed_layers, restoring = False):
     @param saveloc : The save location for the current model training process.
     @param restoring : If it is currently being used for model restoration, 
         which does not require another full-save
-    @param decomposed_layers : Name of the newly decomposed layers
+    @param decomposed_layers : Names of the decomposed layers.
     @return The base for all delta calculations.
     """
     wd = initmodel.state_dict()
@@ -155,7 +155,7 @@ def load_checkpoint(full_path):
     decompressed_dcomp = decompress.decode_data(decomposed_weights)
     return decompressed_weights, decompressed_dcomp, checkpoint_bias
 
-def restore_checkpoint(model, saveloc, id, rank):
+def restore_checkpoint(model, saveloc, id, decomposed_layers, rank = -1, scaling = -1):
     """
     @param model : The model to load the checkpoint weights into.
     @param saveloc : The filepath for the training process to be restored from.
@@ -163,7 +163,8 @@ def restore_checkpoint(model, saveloc, id, rank):
             the training process to be restored from, ID given is treated as inclusive.
             Note that valid IDs starts from 1 onwards (0-th ID is the full save).
     @param rank : The rank specified within the decomposition process.
-
+    @param scaling : The scaling factor used.
+    @param decomposed_layers : Names of the decomposed layers.
     @return model with restored weights included.
     """
     fp = os.path.join(saveloc, "base_model.pt")
@@ -183,6 +184,7 @@ def restore_checkpoint(model, saveloc, id, rank):
     fp = os.path.join(saveloc, "lc_checkpoint_{}.pt".format(id))
     _, _, full_bias = load_checkpoint(fp)
 
-    new_sd = decompress.restore_state_dict(base, base_decomposed, full_bias, model.state_dict(), rank, og_sd)
+    new_sd = decompress.restore_state_dict(base, base_decomposed, full_bias, model.state_dict(), og_sd,
+                                           decomposed_layers, rank, scaling)
     model.load_state_dict(new_sd)
     return model
