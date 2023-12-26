@@ -9,8 +9,8 @@ def getBase(model):
         low-rank version of the custom linear layers.
     """
     wd = model.state_dict()
-    w = [wd['classifier.1.weight'], wd['classifier.3.weight'],  wd['classifier.5.weight']]
-    b = [wd['classifier.1.bias'], wd['classifier.3.bias'],  wd['classifier.5.bias']]
+    w = [wd['classifier.1.weight'], wd['classifier.3.weight']]
+    b = [wd['classifier.1.bias'], wd['classifier.3.bias']]
     return w, b
 
 def load_sd_decomp(org_sd, model, decomposed_layers):
