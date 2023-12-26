@@ -8,7 +8,6 @@ def generate_rank(x, y):
 class LowRankLinear(nn.Module):
     def __init__(self, in_shape: int, out_shape: int,
                  base, bias : torch.Tensor, scaling : int = -1, rank : int = -1):
-        super().__init__()
         """
         @param in_shape, out_shape : Layer dimensions as per nn.Linear
         @param rank : Rank of the decomposition. 
@@ -23,6 +22,7 @@ class LowRankLinear(nn.Module):
 
         Such that A and B are trainable low-rank matrices initialised as uniform and zero initially.
         """
+        super().__init__()
         if rank == -1:
             rank = generate_rank(in_shape, out_shape)
         alpha_t = torch.empty((out_shape, rank), dtype = torch.float32, requires_grad = True)
