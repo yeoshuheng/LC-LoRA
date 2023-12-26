@@ -9,8 +9,8 @@ def getBase(model):
         low-rank version of the custom linear layers.
     """
     wd = model.state_dict()
-    w = [wd['classifier.1.weight'], wd['classifier.3.weight']]
-    b = [wd['classifier.1.bias'], wd['classifier.3.bias']]
+    w = [wd['classifier.1.weight'], wd['classifier.3.weight'],  wd['classifier.5.weight']]
+    b = [wd['classifier.1.bias'], wd['classifier.3.bias'],  wd['classifier.5.bias']]
     return w, b
 
 def load_sd_decomp(org_sd, model, decomposed_layers):
@@ -28,7 +28,7 @@ def load_sd_decomp(org_sd, model, decomposed_layers):
     model.load_state_dict(new_sd)
 
 class LeNet_LowRank(nn.Module):
-    def __init__(self, weights : list, bias : list, num=10, rank = 100):
+    def __init__(self, weights : list, bias : list, num=10, rank = -1):
         super().__init__()
         self.feature = nn.Sequential(
             nn.Conv2d(in_channels=1, out_channels=6, kernel_size=5, stride=1, padding=2),   # 28*28->32*32-->28*28

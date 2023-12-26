@@ -29,7 +29,7 @@ def load_sd_decomp(org_sd, model, decomposed_layers):
     model.load_state_dict(new_sd)
 
 class AlexNet_LowRank(nn.Module):   
-    def __init__(self, weights : list, bias : list, num=10, rank = 100):
+    def __init__(self, weights : list, bias : list, num=10, rank = -1):
         """
         @param weights : List of initial bases for the loRA linear layers, kept as a parameter.
         @param bias : List of initial biases for the loRA linear layers, kept as a parameter.
