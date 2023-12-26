@@ -27,16 +27,19 @@ class LowRankConv(nn.Module):
         self.base = base.clone()
         self.base.requires_grad = False
         self.bias = bias
-        a, b, _, d = base.shape
-        self.alpha = nn.Parameter(
-            torch.empty((rank, b, 1, 1), dtype = torch.float32, requires_grad = True))
-        self.beta = nn.Parameter(
-            torch.empty((rank, 1, d, d), dtype = torch.float32, requires_grad = True))
-        self.gamma = nn.Parameter(
-            torch.empty((a, rank, 1, 1), dtype = torch.float32, requires_grad = True))
+        l, f, v, h = parafac(base.data, rank = rank, init = "svd")
+        self.alpha = nn.Conv2d(in_channels = f.shape[0], out_channels = f.shape[1], 
+                                     kernel_size=1, stride=1, padding=0, bias = False)
+        self.beta = nn.Conv2d(in_channels = v.shape[0], out_channels = v.shape[1], 
+                                     kernel_size=1, stride=1, padding=0, bias = False)
+        self.gamma = nn.Conv2d(in_channels = h.shape[0], out_channels = h.shape[1],
+                               kernel_size=1, stride=1, padding=0, bias = False)
+        self.eta = nn.Conv2d(in_channels = l.shape[0], out_channels = l.shape[1],
+                             kernel_size=1, stride=1, padding=0, bias = False)
         torch.nn.init.kaiming_uniform_(self.alpha, a =  math.sqrt(5))
         torch.nn.init.kaiming_uniform_(self.beta, a =  math.sqrt(5))
-        torch.nn.init.zeros_(self.gamma)
+        torch.nn.init.kaiming_uniform_(self.gamma, a =  math.sqrt(5))
+        torch.nn.init.zeros_(self.eta)
 
     def forward(self, x):
         x = self.alpha(x)
