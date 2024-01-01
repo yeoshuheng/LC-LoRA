@@ -2,8 +2,7 @@
 
 ### Introduction
 
-Sequential compression framework for model training using Low-Rank Approximation and delta-encoding.
-Aimed to support diverging branches in model training process too.
+Sequential compression framework for diverging branches in model training using Low-Rank Approximation and delta-encoding.
 
 ### Credits
 
@@ -18,3 +17,5 @@ Design of the mechanism inspired by the following works:
 4. Edward J. Hu, Yelong Shen, Phillip Wallis, Zeyuan Allen-Zhu, Yuanzhi Li, Shean Wang, Lu Wang & Weizhu Chen's [LoRA: Low-Rank Adaptation of Large Language Models](https://arxiv.org/abs/2106.09685)
 
 5. Yixiao Li, Yifan Yu, Qingru Zhang, Chen Liang, Pengcheng He, Weizhu Chen & Tuo Zhao's [LoSparse: Structured Compression of Large Language Models based on Low-Rank and Sparse Approximation](https://arxiv.org/abs/2306.11222)
+
+6. Bojia Zi, Xianbiao Qi, Lingzhi Wang, Jianan Wang, Kam-Fai Wong, Lei Zhang's [Delta-LoRA: Fine-Tuning High-Rank Parameters with the Delta of Low-Rank Matrices](https://arxiv.org/abs/2309.02411)
