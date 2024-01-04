@@ -4,7 +4,7 @@
 
 Sequential compression framework for diverging branches in model training using Low-Rank Approximation and delta-encoding.
 
-### Proposed Systemg
+### Proposed System
 
 #### Compression Process
 
