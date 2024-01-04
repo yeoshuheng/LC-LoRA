@@ -4,6 +4,45 @@
 
 Sequential compression framework for diverging branches in model training using Low-Rank Approximation and delta-encoding.
 
+### Proposed Systemg
+
+#### Compression Process
+
+![compressionsystem](./assets/Compression.png)
+
+#### Restoration / Super-step Process
+
+
+![restorationsystem](./assets/Restoration.png)
+
+### Performance
+
+#### Test parameters
+
+| Model                  | AlexNet                   | VGG-16                    | LeNet                     |
+|------------------------|---------------------------|---------------------------|---------------------------|
+|     Branching Point    |           80.72%          |           72.85%          |           77.75%          |
+|         Dataset        |            MNIST          |            MNIST          |            MNIST          |
+|        Bit-width       |              3            |              3            |              3            |
+|       LoRA Scaling     |             0.5           |             0.5           |             0.5           |
+|        Batch Size      |             32            |             32            |             32            |
+|      Learning Rate     |            0.01           |            0.01           |            0.01           |
+|          Epochs        |             20            |             20            |             20            |
+|        Super-Step      |     Every 10 iteration    |     Every 10 iteration    |     Every 10 iteration    |
+
+### Compression Performance
+
+Compression taken against default PyTorch pickling.
+
+|      Model     |     Mechanism    |     Compression Ratio    |     Space Savings    |
+|:--------------:|:----------------:|:------------------------:|:--------------------:|
+|     AlexNet    |         LC       |          808.35%         |        87.629%       |
+|                |     LC + LoRA    |         25995.409%       |        99.615%       |
+|      VGG-16    |         LC       |          813.74%         |        87.711%       |
+|                |     LC + LoRA    |         4188.412%        |        97.612%       |
+|      LeNet     |         LC       |          537.584%        |         81.39%       |
+|                |     LC + LoRA    |         1889.2869%       |        94.707%       |
+
 ### Credits
 
 Design of the mechanism inspired by the following works:
