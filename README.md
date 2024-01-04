@@ -43,6 +43,10 @@ Compression taken against default PyTorch pickling.
 |      LeNet     |         LC       |          537.584%        |         81.39%       |
 |                |     LC + LoRA    |         1889.2869%       |        94.707%       |
 
+### Accuracy Performance
+
+Restored models have a *< 4%* accuracy deviation compared to original full non-LoRA models with the exception of LeNet. A possible explanation would be the linear layers of LeNet are too small (0.05M parameters), resulting in poor capture of training delta.
+
 ### Credits
 
 Design of the mechanism inspired by the following works:
