@@ -49,6 +49,8 @@ Restored models have a *< 4%* accuracy deviation compared to original full non-L
 
 ### Credits
 
+Built with guidance and support from Prof. Ooi Wei Tsang (NUS).
+
 Design of the mechanism inspired by the following works:
 
 1. Yu Chen, Zhenming Liu, Bin Ren & Xin Jin's [On Efficient Construction of Checkpoints.](https://arxiv.org/abs/2009.13003)
