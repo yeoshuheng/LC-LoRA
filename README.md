@@ -37,11 +37,11 @@ Compression taken against default PyTorch pickling.
 |      Model     |     Mechanism    |     Compression Ratio    |     Space Savings    |
 |:--------------:|:----------------:|:------------------------:|:--------------------:|
 |     AlexNet    |         LC       |          808.35%         |        87.629%       |
-|                |     LC + LoRA    |         25995.409%       |        99.615%       |
+|                |     LoBranch     |         25995.409%       |        99.615%       |
 |      VGG-16    |         LC       |          813.74%         |        87.711%       |
-|                |     LC + LoRA    |         4188.412%        |        97.612%       |
+|                |     LoBranch     |         4188.412%        |        97.612%       |
 |      LeNet     |         LC       |          537.584%        |         81.39%       |
-|                |     LC + LoRA    |         1889.2869%       |        94.707%       |
+|                |     LoBranch     |         1889.2869%       |        94.707%       |
 
 ### Accuracy Performance
 
