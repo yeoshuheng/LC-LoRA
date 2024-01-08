@@ -2,7 +2,7 @@
 
 ### Introduction
 
-Sequential compression framework for diverging branches in model training using Low-Rank Approximation and delta-encoding.
+Delta-compression framework for diverging branches in model training using Low-Rank Approximation (LoRA) and delta-encoding.
 
 ### Proposed System
 
@@ -30,20 +30,19 @@ Sequential compression framework for diverging branches in model training using 
 |          Epochs        |             20            |             20            |             20            |
 |        Super-Step      |     Every 10 iteration    |     Every 10 iteration    |     Every 10 iteration    |
 
-### Compression Performance
+### Performance
 
-Compression taken against default PyTorch pickling.
+Compression performance are taken against default PyTorch pickling.
 
-|      Model     |     Mechanism    |     Compression Ratio    |     Space Savings    |
-|:--------------:|:----------------:|:------------------------:|:--------------------:|
-|     AlexNet    |         LC       |          808.35%         |        87.629%       |
-|                |     LoBranch     |         25995.409%       |        99.615%       |
-|      VGG-16    |         LC       |          813.74%         |        87.711%       |
-|                |     LoBranch     |         4188.412%        |        97.612%       |
-|      LeNet     |         LC       |          537.584%        |         81.39%       |
-|                |     LoBranch     |         1889.2869%       |        94.707%       |
+|      Model     |     Mechanism    |     Compression Ratio    |     Space Savings    |     Final Accuracy     (Restored / Full)    |
+|:--------------:|:----------------:|:------------------------:|:--------------------:|:-------------------------------------------:|
+|     AlexNet    |         LC       |          808.35%         |        87.629%       |           98.4%/98.7%      (-0.03%)         |
+|                |       LoBranch   |         25995.409%       |        99.615%       |            95.3%/98.7%     (-3.4%)          |
+|      VGG-16    |         LC       |          813.74%         |        87.711%       |          99.1% / 99.4%     (-0.03%)         |
+|                |     LoBranch     |         4188.412%        |        97.612%       |           98.4% / 99.4%     (-1.0%)         |
+|      LeNet     |         LC       |          537.584%        |         81.39%       |            95.9%/95.9%     (-0.0%)          |
+|                |     LoBranch     |         1889.2869%       |        94.707%       |            93.8%/95.9%     (-2.1%)          |
 
-### Accuracy Performance
 
 Restored models have a *< 4%* accuracy deviation compared to original full non-LoRA models with the exception of LeNet. A possible explanation would be the linear layers of LeNet are too small (0.05M parameters), resulting in poor capture of training delta.
 
