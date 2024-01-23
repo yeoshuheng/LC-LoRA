@@ -27,7 +27,10 @@ def extract_weights(initmodel, saveloc, decomposed_layers, restoring = False):
     @param decomposed_layers : Names of the decomposed layers.
     @return The base for all delta calculations.
     """
-    wd = initmodel.state_dict()
+    if not restoring:
+        wd = initmodel.state_dict()
+    else:
+        wd = initmodel # If we are restoring, this will already be a state dictionary.
 
     if not restoring:
         # Save current model state_dict for restoration of weights.
@@ -149,16 +152,17 @@ def load_checkpoint(full_path):
     """
     @param full_path : The full_path of the checkpoint to be reloaded from.
     """
-    with open(full_path, "r") as f:
+    with open(full_path, "rb") as f:
         checkpoint_weights, decomposed_weights, checkpoint_bias = pickle.load(f)
     decompressed_weights = decompress.decode_data(checkpoint_weights)
     decompressed_dcomp = decompress.decode_data(decomposed_weights)
     return decompressed_weights, decompressed_dcomp, checkpoint_bias
 
-def restore_checkpoint(model, saveloc, id, decomposed_layers, rank = -1, scaling = -1):
+def restore_checkpoint(model, saveloc_, set_id, id, decomposed_layers, rank = -1, scaling = -1):
     """
     @param model : The model to load the checkpoint weights into.
-    @param saveloc : The filepath for the training process to be restored from.
+    @param saveloc_ : The filepath for the training process to be restored from.
+    @param set_id : The set id to restore the model from.
     @param id : The ID with respect to the current file for 
             the training process to be restored from, ID given is treated as inclusive.
             Note that valid IDs starts from 1 onwards (0-th ID is the full save).
@@ -167,14 +171,21 @@ def restore_checkpoint(model, saveloc, id, decomposed_layers, rank = -1, scaling
     @param decomposed_layers : Names of the decomposed layers.
     @return model with restored weights included.
     """
+    saveloc = os.path.join(saveloc_, "set_{}".format(set_id))
     fp = os.path.join(saveloc, "base_model.pt")
+    
+    if id == 0: # id 0 == base model.
+        model.load_state_dict(torch.load(fp))
+        return model
+    
     og_sd = torch.load(fp)
-    org_weight, org_decomposed_weights = extract_weights(og_sd, saveloc, restoring = True)
+    org_weight, org_decomposed_weights = extract_weights(og_sd, saveloc, 
+                                                         decomposed_layers, restoring = True)
     base = org_weight.copy()
     base_decomposed = org_decomposed_weights.copy()
 
     # Adding delta back to base.
-    for i in range(1, id + 1):
+    for i in range(0, id + 1):
         fp = os.path.join(saveloc, "lc_checkpoint_{}.pt".format(i))
         decompressed_weights, decompressed_dcomp_weights, _ = load_checkpoint(fp)
         base = np.add(base, decompressed_weights)
@@ -184,7 +195,14 @@ def restore_checkpoint(model, saveloc, id, decomposed_layers, rank = -1, scaling
     fp = os.path.join(saveloc, "lc_checkpoint_{}.pt".format(id))
     _, _, full_bias = load_checkpoint(fp)
 
-    new_sd = decompress.restore_state_dict(base, base_decomposed, full_bias, model.state_dict(), og_sd,
-                                           decomposed_layers, rank, scaling)
+    # Get the LoRA base of the model.
+    lora_fp = os.path.join(saveloc, "lora_bases.pt")
+    lora_bases = torch.load(lora_fp)
+
+    new_sd = decompress.restore_state_dict(decoded_checkpoint=base, decoded_decomp_checkpoint=base_decomposed, 
+                                           lora_bases=lora_bases, bias=full_bias, 
+                                           base_dict=model.state_dict(),
+                                           decomposed_layers=decomposed_layers, 
+                                           rank=rank, scaling=scaling)
     model.load_state_dict(new_sd)
     return model
