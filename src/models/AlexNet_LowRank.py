@@ -1,17 +1,34 @@
 import torch.nn as nn
+import os, torch
 from src.compression.LowRankLinear import LowRankLinear
 
 
-def getBase(model):
+# TODO: getBase should not be model specific, should be included across the board.
+
+def getBase(model, basepath):
     """
     @param model : The original AlexNet.
     
     @return The weights and bias needed to act as 
         the base for the low-rank version of the custom linear layers.
     """
+
+    if not os.path.exists(basepath):
+        os.makedirs(basepath)
+    fp = os.path.join(basepath, "lora_bases.pt")
+
     wd = model.state_dict()
     w = [wd['classifier.1.weight'], wd['classifier.4.weight']]
     b = [wd['classifier.1.bias'], wd['classifier.4.bias']]
+
+    # Save base weights.
+    base_dict = {
+        'classifier.1.weight' : wd['classifier.1.weight'],
+        'classifier.1.bias' : wd['classifier.1.bias'],
+        'classifier.4.weight' : wd['classifier.4.weight'],
+        'classifier.4.bias' : wd['classifier.4.bias']
+    }
+    torch.save(base_dict, fp)
     return w, b
 
 def load_sd_decomp(org_sd, model, decomposed_layers):

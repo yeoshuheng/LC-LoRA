@@ -1,16 +1,31 @@
 import torch.nn as nn
+import os
+import torch
 from src.compression.LowRankLinear import LowRankLinear
 
-def getBase(model):
+def getBase(model, basepath=""):
     """
     @param model : The original LeNet.
     
     @return The weights and bias needed to act as the base for the 
         low-rank version of the custom linear layers.
     """
+    if basepath != "":
+        if not os.path.exists(basepath):
+            os.makedirs(basepath)
+        fp = os.path.join(basepath, "lora_bases.pt")
+
     wd = model.state_dict()
     w = [wd['classifier.1.weight'], wd['classifier.3.weight']]
     b = [wd['classifier.1.bias'], wd['classifier.3.bias']]
+
+    base_dict = {
+        'classifier.1.weight' : wd['classifier.1.weight'],
+        'classifier.1.bias' : wd['classifier.1.bias'],
+        'classifier.3.weight' : wd['classifier.3.weight'],
+        'classifier.3.bias' : wd['classifier.3.bias']
+    }
+    torch.save(base_dict, fp)
     return w, b
 
 def load_sd_decomp(org_sd, model, decomposed_layers):
