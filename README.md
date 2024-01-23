@@ -4,46 +4,6 @@
 
 Delta-compression framework for diverging branches in model training using Low-Rank Approximation (LoRA) and delta-encoding.
 
-### Proposed System
-
-#### Compression Process
-
-![compressionsystem](./assets/Compression.png)
-
-#### Restoration / Super-step Process
-
-
-![restorationsystem](./assets/Restoration.png)
-
-### Performance
-
-#### Test parameters
-
-| Model                  | AlexNet                   | VGG-16                    | LeNet                     |
-|------------------------|---------------------------|---------------------------|---------------------------|
-|     Branching Point    |           80.72%          |           72.85%          |           77.75%          |
-|         Dataset        |            MNIST          |            MNIST          |            MNIST          |
-|        Bit-width       |              3            |              3            |              3            |
-|       LoRA Scaling     |             0.5           |             0.5           |             0.5           |
-|        Batch Size      |             32            |             32            |             32            |
-|      Learning Rate     |            0.01           |            0.01           |            0.01           |
-|          Epochs        |             20            |             20            |             20            |
-|        Super-Step      |     Every 10 iteration    |     Every 10 iteration    |     Every 10 iteration    |
-
-### Performance
-
-Compression performance are taken against default PyTorch pickling.
-
-|      Model     |     Mechanism    |     Compression Ratio    |     Space Savings    |     Final Accuracy     (Restored / Full)    |
-|:--------------:|:----------------:|:------------------------:|:--------------------:|:-------------------------------------------:|
-|     AlexNet    |         LC       |          808.35%         |        87.629%       |           98.4%/98.7%      (-0.03%)         |
-|                |       LC-LoRA   |         25995.409%       |        99.615%       |            95.3%/98.7%     (-3.4%)          |
-|      VGG-16    |         LC       |          813.74%         |        87.711%       |          99.1% / 99.4%     (-0.03%)         |
-|                |     LC-LoRA  |         4188.412%        |        97.612%       |           98.4% / 99.4%     (-1.0%)         |
-|      LeNet     |         LC       |          537.584%        |         81.39%       |            95.9%/95.9%     (-0.0%)          |
-|                |     LC-LoRA     |         1889.2869%       |        94.707%       |            93.8%/95.9%     (-2.1%)          |
-
-
 ### Credits
 
 Built with guidance and support from Prof. Ooi Wei Tsang (NUS).
