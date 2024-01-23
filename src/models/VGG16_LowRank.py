@@ -2,16 +2,17 @@ import torch.nn as nn
 import torch, os
 from src.compression.LowRankLinear import LowRankLinear
 
-def getBase(model, basepath):
+def getBase(model, basepath=""):
     """
     @param model : The original VGG16.
     
     @return The weights and bias needed to act as 
         the base for the low-rank version of the custom linear layers.
     """
-    if not os.path.exists(basepath):
-        os.makedirs(basepath)
-    fp = os.path.join(basepath, "lora_bases.pt")
+    if basepath != "":
+        if not os.path.exists(basepath):
+            os.makedirs(basepath)
+        fp = os.path.join(basepath, "lora_bases.pt")
 
     wd = model.state_dict()
     w = [wd['classifier.0.weight'], wd['classifier.3.weight'], wd['classifier.6.weight']]
