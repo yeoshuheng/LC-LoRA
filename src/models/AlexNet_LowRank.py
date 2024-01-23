@@ -12,10 +12,6 @@ def getBase(model, basepath=""):
     @return The weights and bias needed to act as 
         the base for the low-rank version of the custom linear layers.
     """
-    if basepath != "":
-        if not os.path.exists(basepath):
-            os.makedirs(basepath)
-        fp = os.path.join(basepath, "lora_bases.pt")
 
     wd = model.state_dict()
     w = [wd['classifier.1.weight'], wd['classifier.4.weight']]
@@ -28,7 +24,11 @@ def getBase(model, basepath=""):
         'classifier.4.weight' : wd['classifier.4.weight'],
         'classifier.4.bias' : wd['classifier.4.bias']
     }
-    torch.save(base_dict, fp)
+    if basepath != "":
+        if not os.path.exists(basepath):
+            os.makedirs(basepath)
+        fp = os.path.join(basepath, "lora_bases.pt")
+        torch.save(base_dict, fp)
     return w, b
 
 def load_sd_decomp(org_sd, model, decomposed_layers):
