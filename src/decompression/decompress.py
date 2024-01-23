@@ -9,7 +9,9 @@ def decode_data(checkpoint):
 
     @return : Decoded checkpoint.
     """
-    return np.frombuffer(zlib.decompress(checkpoint), dtype = np.float32)
+
+    decoded = zlib.decompress(checkpoint)
+    return np.frombuffer(decoded, dtype = np.float32)
 
 def restoreLinearLayer(alpha, beta, base, scaling):
     """
@@ -23,15 +25,16 @@ def restoreLinearLayer(alpha, beta, base, scaling):
         scaling = 0.5
     return torch.add(base, scaling * torch.matmul(alpha, beta))
 
-def restore_state_dict(decoded_checkpoint, decoded_decomp_checkpoint, bias, base_dict, org, decomposed_layers, rank = -1, scaling = -1):
+def restore_state_dict(decoded_checkpoint, decoded_decomp_checkpoint, lora_bases, bias, base_dict,
+                        decomposed_layers, rank = -1, scaling = -1):
     """
     @param decoded_checkpoint: The decoded checkpoint of normal weights from zlib.
     @param decoded_decomp_checkpoint: The decoded checkpoint of decomposed weights from zlib.
+    @param lora_bases : 
     @param bias : The bias dictionary of the model.
     @param base_dict : The base dictionary of the model which helps us understand its structure.
     @param rank : The rank of the decomposition used for the linear layers.
     @param scaling : The scaling factor of the linear layers (default put -1)
-    @param org : The original model state dictionary, when the branch was first taken.
     @param decomposed_layers : list of layers that have undergone decomposition. 
 
     @return Restored state_dict.
@@ -55,9 +58,10 @@ def restore_state_dict(decoded_checkpoint, decoded_decomp_checkpoint, bias, base
             last_idx_dcomp += t_element_alpha
             beta = decoded_decomp_checkpoint[last_idx_dcomp : last_idx_dcomp + t_element_beta]
             last_idx_dcomp += t_element_beta
-            alpha = torch.from_numpy(alpha).reshape(dim[0], rr)
-            beta = torch.from_numpy(beta).reshape(rr, dim[1])
-            restored_decomp = restoreLinearLayer(alpha, beta, org[layer_name])
+            alpha = torch.unflatten(torch.from_numpy(np.copy(alpha)), -1, (dim[0], rr))
+            beta = torch.unflatten(torch.from_numpy(np.copy(beta)), -1, (rr, dim[1]))
+            base = lora_bases[layer_name]
+            restored_decomp = restoreLinearLayer(alpha, beta, base, scaling)
             base_dict[layer_name] = restored_decomp
         elif "classifier" in layer_name:
             base_dict[layer_name] = bias[layer_name]
